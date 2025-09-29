@@ -1,0 +1,12 @@
+{
+  "domain": "subscription_monitor",
+  "name": "订阅监控",
+  "version": "1.1.0",
+  "documentation": "https://github.com/chaosl1996/subscription_monitor",
+  "requirements": ["aiohttp>=3.8.0"],
+  "dependencies": [],
+  "codeowners": ["@chaos"],
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "homeassistant": "2023.8.0"
+}
