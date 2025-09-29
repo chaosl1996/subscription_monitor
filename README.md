@@ -43,8 +43,7 @@
 4. 刷新页面或点击获取订阅按钮
 5. 查找包含认证信息的请求
 6. 复制认证令牌
-![alt text]([path_to_your_image/image_file.jpg](https://github.com/chaosl1996/subscription_monitor/blob/main/Snipaste_2025-09-29_21-13-31.png))
-
+![云洞数据平台Token获取示例](https://github.com/chaosl1996/subscription_monitor/blob/main/Snipaste_2025-09-29_21-13-31.png)
 ## 实体属性
 
 集成添加后，将在 Home Assistant 中创建以下实体：
