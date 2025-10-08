@@ -6,6 +6,7 @@ class SubscriptionMonitorSensor(CoordinatorEntity, SensorEntity):
     _attr_has_entity_name = True
     _attr_name = SENSOR_NAME
     _attr_icon = SENSOR_ICON
+    _attr_unit_of_measurement = "%"
 
     def __init__(self, coordinator, config_entry):
         super().__init__(coordinator)
@@ -13,9 +14,9 @@ class SubscriptionMonitorSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def state(self):
-        # 使用流量使用率作为状态，并添加百分号单位
+        # 使用流量使用率作为状态，返回纯数字值
         usage_percentage = self.coordinator.data.get("usage_percentage", 0)
-        return f"{usage_percentage}%"
+        return usage_percentage
 
     @property
     def extra_state_attributes(self):
