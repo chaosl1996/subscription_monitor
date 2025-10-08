@@ -4,6 +4,8 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
 import aiohttp
+import asyncio
+from datetime import datetime
 from .const import DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,20 +20,29 @@ class SubscriptionMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         
         if user_input is not None:
             try:
-                # 验证token是否有效
-                if not await self._async_validate_token("default", user_input["auth_token"]):
-                    errors["base"] = "invalid_token"
-                else:
-                    # 创建配置条目
+                # 使用邮箱和密码登录获取token
+                token_data = await self._async_login_get_token(user_input["email"], user_input["password"])
+                if token_data:
+                    # 创建配置条目，存储邮箱、密码和token信息
                     platform_name = PLATFORMS["default"]["name"]
-                    return self.async_create_entry(title=f"{platform_name} - 订阅监控", data=user_input)
+                    entry_data = {
+                        "email": user_input["email"],
+                        "password": user_input["password"],
+                        "auth_token": token_data["token"],
+                        "auth_data": token_data["auth_data"],
+                        "token_expiry": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                    return self.async_create_entry(title=f"{platform_name} - {user_input['email']}", data=entry_data)
+                else:
+                    errors["base"] = "invalid_credentials"
             except Exception as e:
                 _LOGGER.error(f"配置验证失败: {str(e)}")
                 errors["base"] = "unknown_error"
         
         # 显示配置表单，只有云洞数据平台
         data_schema = vol.Schema({
-            vol.Required("auth_token"): str
+            vol.Required("email"): str,
+            vol.Required("password"): str
         })
         
         return self.async_show_form(
@@ -39,11 +50,90 @@ class SubscriptionMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
             errors=errors,
             description_placeholders={
-                "auth_token": "输入云洞数据平台的Token"
+                "email": "输入云洞数据平台的邮箱",
+                "password": "输入云洞数据平台的密码"
             }
         )
     
+    async def _async_login_get_token(self, email, password):
+        """通过邮箱和密码登录获取token"""
+        try:
+            platform = PLATFORMS["default"]
+            login_url = platform.get("login_url", "")
+            login_headers = platform.get("login_headers", {})
+            
+            if not login_url:
+                _LOGGER.error("登录URL未配置")
+                return None
+            
+            # 构建登录请求数据
+            form_data = f"email={email}&password={password}"
+            
+            _LOGGER.debug(f"发送登录请求到: {login_url}")
+            _LOGGER.debug(f"登录请求头: {login_headers}")
+            
+            # 发送登录请求
+            async with aiohttp.ClientSession() as session:
+                try:
+                    async with session.post(login_url, headers=login_headers, data=form_data) as response:
+                        _LOGGER.debug(f"登录请求响应状态码: {response.status}")
+                        _LOGGER.debug(f"登录响应头: {dict(response.headers)}")
+                        
+                        # 尝试获取响应内容（无论状态码如何）
+                        response_text = await response.text()
+                        _LOGGER.debug(f"登录响应原始内容: {response_text}")
+                        
+                        if response.status == 200:
+                            try:
+                                # 尝试解析JSON响应
+                                data = await response.json(content_type=None)  # 忽略content_type检查
+                                _LOGGER.debug(f"登录响应解析后数据: {data}")
+                                
+                                # 检查是否获取到token，考虑多种可能的数据结构
+                                if data:
+                                    # 检查常见的token字段位置
+                                    token = None
+                                    auth_data = None
+                                    
+                                    # 检查data.token结构
+                                    if isinstance(data, dict):
+                                        if "token" in data:
+                                            token = data["token"]
+                                            auth_data = data
+                                        elif "data" in data and isinstance(data["data"], dict):
+                                            if "token" in data["data"]:
+                                                token = data["data"]["token"]
+                                                auth_data = data["data"]
+                                        elif "result" in data and isinstance(data["result"], dict):
+                                            if "token" in data["result"]:
+                                                token = data["result"]["token"]
+                                                auth_data = data["result"]
+                                
+                                if token:
+                                    _LOGGER.info("成功获取到token")
+                                    return {
+                                        "token": token,
+                                        "auth_data": auth_data or ""
+                                    }
+                                else:
+                                    _LOGGER.error(f"登录成功但未获取到token: {data}")
+                                    return None
+                            except Exception as e:
+                                _LOGGER.error(f"解析登录响应JSON失败: {str(e)}")
+                                _LOGGER.debug(f"无法解析的响应内容: {response_text}")
+                                return None
+                        else:
+                            _LOGGER.error(f"登录请求失败: 状态码{response.status}, 响应内容: {response_text}")
+                            return None
+                except aiohttp.ClientError as e:
+                    _LOGGER.error(f"登录请求网络错误: {str(e)}")
+                    return None
+        except Exception as e:
+            _LOGGER.error(f"登录过程中发生未知错误: {str(e)}")
+            return None
+    
     async def _async_validate_token(self, platform_key, token):
+        """验证token是否有效"""
         # 基本的token格式验证
         if not token:
             return False

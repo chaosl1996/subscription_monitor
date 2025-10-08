@@ -13,9 +13,9 @@ class SubscriptionMonitorSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def state(self):
-        # 使用流量使用率作为状态
+        # 使用流量使用率作为状态，并添加百分号单位
         usage_percentage = self.coordinator.data.get("usage_percentage", 0)
-        return usage_percentage
+        return f"{usage_percentage}%"
 
     @property
     def extra_state_attributes(self):
