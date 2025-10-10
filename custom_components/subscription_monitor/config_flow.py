@@ -178,12 +178,29 @@ class SubscriptionMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class SubscriptionMonitorOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry):
-        # 不再直接设置config_entry，而是通过super()调用
-        super().__init__(config_entry)
+        # 不再向父类构造函数传递config_entry参数，也不再显式设置self.config_entry
+        # Home Assistant 2025.12开始，OptionsFlow基类会自动处理config_entry
+        super().__init__()
     
     async def async_step_init(self, user_input=None):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
         
-        # 可以添加选项配置，但目前不需要
-        return self.async_show_form(step_id="init")
+        # 获取当前配置项的选项，如果没有则使用默认值
+        current_options = self.config_entry.options or {}
+        
+        # 配置选项表单，添加刷新间隔配置
+        options_schema = vol.Schema({
+            vol.Optional(
+                "scan_interval", 
+                default=current_options.get("scan_interval", 300)
+            ): vol.All(vol.Coerce(int), vol.Range(min=60, max=3600)),
+        })
+        
+        return self.async_show_form(
+            step_id="init",
+            data_schema=options_schema,
+            description_placeholders={
+                "interval_description": "配置数据刷新间隔（秒），默认300秒（5分钟）"
+            }
+        )
