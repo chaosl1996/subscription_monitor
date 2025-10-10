@@ -28,8 +28,8 @@ class SubscriptionDataUpdateCoordinator(DataUpdateCoordinator):
         # 直接使用默认平台配置（云洞数据）
         self.platform = PLATFORMS["default"]
         
-        # 默认扫描间隔为30分钟
-        scan_interval = entry.options.get("scan_interval", 1800)
+        # 默认扫描间隔为5分钟（300秒）
+        scan_interval = entry.options.get("scan_interval", 300)
         
         super().__init__(
             hass,
@@ -625,6 +625,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    # 注册配置选项更新的回调
+    entry.async_on_unload(
+        entry.add_update_listener(async_update_options)
+    )
+
     await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
     return True
 
@@ -636,4 +641,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
-    return unload_ok
+    return True
+
+async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """处理配置选项的更新"""
+    # 重新加载条目以应用新的配置选项
+    await hass.config_entries.async_reload(entry.entry_id)
