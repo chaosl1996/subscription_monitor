@@ -1,6 +1,6 @@
 # 云洞数据订阅监控集成
 
-这个集成允许你在Home Assistant中监控[云洞数据平台](https://yundong.xn--xhq8sm16c5ls.com/#/register?code=NXp1KlCC)的网络服务订阅信息，包括会员类型、到期时间、流量使用情况等。
+这个集成允许你在Home Assistant中监控[云洞数据平台](https://yundong.xn--xhq8sm16c5ls.com/#/register?code=NXp1KlCC)的网络服务订阅信息，包括会员类型、到期时间、流量使用情况等。支持自定义API域名，默认使用`https://gw.inkinx-s.com`端点。
 
 ## 功能特点
 
@@ -33,7 +33,8 @@
 1. 进入 `配置` > `集成` > `添加集成`
 2. 搜索并选择 `云洞数据订阅监控`
 3. 输入你的云洞数据平台的邮箱和密码
-4. 完成配置
+4. （可选）输入API基础URL，如无则使用默认值 `https://gw.inkinx-s.com`
+5. 完成配置
 
 集成会自动使用你的邮箱和密码登录云洞数据平台获取认证信息。
 
@@ -81,6 +82,18 @@
 3. 查看 Home Assistant 日志获取详细错误信息
 
 ## 更新日志
+
+### 1.5.0
+- 更新API端点为`https://gw.inkinx-s.com`
+- 允许用户在配置时仅输入域名（如`https://gw.inkinx-s.com`）
+- 修复UTF-8编码解码错误
+- 修复SSL证书验证问题
+- 移除Brotli支持以消除相关警告
+- 改进压缩响应处理，添加完善的错误处理机制
+- 支持多种编码（utf-8, gbk, gb2312, latin-1）
+- 修复JSON解析错误（Expecting value: line 1 column 1）
+- 优化响应处理逻辑，简化代码结构
+- 改进错误日志记录，便于故障排除
 
 ### 1.4.0
 - 添加SensorStateClass.MEASUREMENT状态类，使实体能够在历史记录中显示图表曲线

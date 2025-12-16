@@ -1,7 +1,7 @@
 {
   "domain": "subscription_monitor",
   "name": "订阅监控",
-  "version": "1.1.0",
+  "version": "1.5.0",
   "documentation": "https://github.com/chaosl1996/subscription_monitor",
   "requirements": ["aiohttp>=3.8.0"],
   "dependencies": [],
